@@ -14,77 +14,83 @@ namespace GenerateRepository
         private Dictionary<string, string> nomesDasPropriedades = new Dictionary<string, string>();
         private string nameClass = string.Empty;
         private string nameNamespace = string.Empty;
-        public GenFiles(object objeto, string path)
+
+        private Stack<string> listClass = new Stack<string>();
+        public GenFiles(string nameClass, string path="./", string folderModels="./Models/")
         {
             this.objeto = objeto;
             this.path = path;
-
-            DefinirTipoNomePropriedades(objeto);
+            this.nameClass = nameClass;
+            DefinirClasses(nameClass,folderModels);
         }
-
-        private void DefinirTipoNomePropriedades(object instancia)
+        public void GenAllFiles()
         {
-            try
-            {
-                Type tipo = instancia.GetType();
-
-                nameClass = tipo.Name;
-
-                Assembly assembly = Assembly.GetExecutingAssembly();
-
-                nameNamespace = assembly.GetName().Name;
-
-                PropertyInfo[] propriedades = tipo.GetProperties(BindingFlags.Instance | BindingFlags.Public);
-
-                Dictionary<Type, string> tipoAlias = new Dictionary<Type, string>
-        {
-            { typeof(int), "int" },
-            { typeof(string), "string" },
-            { typeof(double), "double" },
-            { typeof(Decimal), "decimal" },
-            { typeof(bool),"bool" }
-        };
-                for (int i = 0; i < propriedades.Length; i++)
-                {
-                    Type propriedadeTipo = propriedades[i].PropertyType;
-                    string tipoAliasString = propriedadeTipo.Name; // Use o nome como padrão
-
-                    if (tipoAlias.ContainsKey(propriedadeTipo))
-                    {
-                        tipoAliasString = tipoAlias[propriedadeTipo];
-                    }
-
-                    nomesDasPropriedades.Add(propriedades[i].Name, tipoAliasString);
-                }
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        private string GetCampos()
-        {
-            var str = new StringBuilder();
-            foreach (var item in nomesDasPropriedades)
-            {
-                str.AppendLine("c." + item.Key + "=m." + item.Key + ";");
-            }
-            return str.ToString();
-        }
-
-        public void GenAllFiles(){
             Console.WriteLine("Deseja gerar Controller? (S/N)");
             string resp = Console.ReadLine();
-            if(resp.ToUpper()=="S"){
+            if (resp.ToUpper() == "S")
+            {
                 this.GenFileController();
             }
             Console.WriteLine("Deseja gerar Repositories? (S/N)");
             resp = Console.ReadLine();
-            if(resp.ToUpper()=="S"){
+            if (resp.ToUpper() == "S")
+            {
                 this.GenFileRepositories();
             }
 
+        }
+
+        private void DefinirClasses(string Classe, string caminho = "./Models/")
+        {
+            var file = caminho + Classe + ".cs";
+
+            if (!File.Exists(file))
+            {
+                Console.WriteLine(file + " não existe");
+                throw new Exception("Arquivo não encontrado...");
+            }
+            var lines = File.ReadLines(file).ToList();
+
+            for (int i = 0; i < lines.Count(); i++)
+            {
+                var linha = lines[i];
+                var arrBase = linha.Split(":");
+                if (arrBase.Length > 1)
+                {
+                    DefinirClasses(arrBase[1]);
+                }
+            }
+            listClass.Push(file);
+        }
+
+        private string GetCampos()
+        {
+            var list = new List<string>();
+            var str = new StringBuilder();
+            foreach (var item in listClass)
+            {
+                var lines = File.ReadLines(item).ToList();
+                for (var i = 0; i < lines.Count; i++)
+                {
+                    if (lines[i].Contains("get;"))
+                    {
+                        list.Add(GetName(lines[i]));
+                    }
+                }
+            }
+
+            foreach (var item in list)
+            {
+                str.AppendLine("c." + item + "=m." + item + ";");
+            }
+
+            return str.ToString();
+        }
+
+        private string GetName(string value)
+        {
+            var arr = value.Trim().Split(" ");
+            return arr[2].Replace("?", "");
         }
         private string GetControllers()
         {
