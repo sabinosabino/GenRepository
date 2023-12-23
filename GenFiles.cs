@@ -73,6 +73,19 @@ namespace GenerateRepository
             return str.ToString();
         }
 
+        public void GenAllFiles(){
+            Console.WriteLine("Deseja gerar Controller? (S/N)");
+            string resp = Console.ReadLine();
+            if(resp.ToUpper()=="S"){
+                this.GenFileController();
+            }
+            Console.WriteLine("Deseja gerar Repositories? (S/N)");
+            resp = Console.ReadLine();
+            if(resp.ToUpper()=="S"){
+                this.GenFileRepositories();
+            }
+
+        }
         private string GetControllers()
         {
             var text = this.GetModeloControllers();
@@ -84,7 +97,7 @@ namespace GenerateRepository
             return text.Replace("@@Class", nameClass).Replace("@@namespace", nameNamespace).Replace("@@SetsUpdate", this.GetCampos());
         }
 
-        public void GenFileController()
+        private void GenFileController()
         {
             var caminho = path + "Controllers/" + nameClass + "Controller.cs";
             if (!File.Exists(caminho))
@@ -97,7 +110,7 @@ namespace GenerateRepository
             }
         }
 
-        public void GenFileRepositories()
+        private void GenFileRepositories()
         {
             var caminho = path + "Repositories/" + nameClass + "Repositories.cs";
             if (!File.Exists(caminho))
